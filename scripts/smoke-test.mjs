@@ -207,11 +207,24 @@ async function testPhone(browser) {
     const info = await page.evaluate(() => {
         const s = window.__game.scene.getScene('Level3Scene');
         const view = s.cameras.main;
-        return { padVisible: s.controls.pad.isVisible, viewX: view.x, w: window.__game.scale.width };
+        return { padVisible: s.controls.pad.isVisible, viewX: view.x, w: window.__game.scale.width, zoom: view.zoom };
     });
     // the 480-wide game view must leave room for the controls on both sides
     const ok = info.padVisible && info.viewX >= 100 && info.w - 480 - info.viewX >= 100;
     report('phone layout puts touch controls beside the game view', ok && errors.length === 0, JSON.stringify(info));
+    report('phones zoom in so the mouse is not tiny', info.zoom > 1.2, `zoom ${info.zoom}`);
+
+    // start upright (game paused, "turn sideways"), then rotate: the canvas must refit
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(800);
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.waitForTimeout(1500);
+    const fit = await page.evaluate(() => {
+        const c = document.querySelector('canvas').getBoundingClientRect();
+        return { canvas: [Math.round(c.width), Math.round(c.height)], win: [innerWidth, innerHeight] };
+    });
+    const fills = fit.canvas[0] >= fit.win[0] - 2 || fit.canvas[1] >= fit.win[1] - 2;
+    report('after rotating a phone the game refits the screen', fills, JSON.stringify(fit));
     await ctx.close();
 }
 

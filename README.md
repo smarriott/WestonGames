@@ -41,7 +41,13 @@ in `netlify.toml`). The only thing loaded from the internet is the pixel font
 | Pause | P or Esc, or the ⏸ button | ⏸ button |
 | Restart level | R | Pause → Restart |
 
-On phones, hold the device sideways (the game asks you to if you don't).
+On phones, hold the device sideways (the game asks you to if you don't). Levels
+zoom in a little on phones so everything is easier to see.
+
+**Tip for the biggest screen on iPhone/iPad:** open the game in Safari, tap the
+Share button, then **Add to Home Screen**. Launched from the home screen icon it
+runs full screen without Safari's address bar. (On Android, the ⛶ button in the
+game goes full screen.)
 
 If you get caught, the level restarts right away. Finished levels unlock in the
 title screen's level picker.

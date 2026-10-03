@@ -29,7 +29,8 @@ function placeButtons() {
  */
 export class TouchPad {
     state: PadState = { left: false, right: false, up: false, down: false, jump: false, action: false };
-    private container: Phaser.GameObjects.Container;
+    /** Holds every pad graphic; drawn only by `cam`. */
+    readonly container: Phaser.GameObjects.Container;
     private dpadKnob: Phaser.GameObjects.Arc;
     private arrows: Phaser.GameObjects.Image[] = [];
     private jumpBtn: Phaser.GameObjects.Arc;
@@ -38,6 +39,11 @@ export class TouchPad {
     private actionEnabled = false;
     private visible = false;
     private uiCam: Phaser.Cameras.Scene2D.Camera;
+
+    /** The full-canvas camera that draws the pad. */
+    get cam() {
+        return this.uiCam;
+    }
     private parts: { obj: Phaser.GameObjects.Components.Transform; at: () => { x: number; y: number }; dx: number; dy: number }[] = [];
 
     constructor(private scene: Phaser.Scene, opts: { action: boolean }) {

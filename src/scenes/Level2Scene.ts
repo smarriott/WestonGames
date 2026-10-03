@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, GAME_W, TILE } from '../config';
+import { COLORS, TILE } from '../config';
 import { BaseLevelScene } from './BaseLevelScene';
 import { LEVEL2_MAP } from '../levels/level2';
 import { markerOf, markersOf } from '../levels/LevelMap';
@@ -58,7 +58,8 @@ export default class Level2Scene extends BaseLevelScene {
         this.setupLevel(LEVEL2_MAP, 'hall');
         const data = this.world.data;
         this.floorY = WorldMap.feet(markerOf(data, 'P')).y;
-        this.cameras.main.scrollX = 0;
+        this.setViewLeft(0);
+        this.cameras.main.scrollY = 100000; // bounds keep the floor in view when zoomed in
 
         this.addDecor();
 
@@ -98,14 +99,15 @@ export default class Level2Scene extends BaseLevelScene {
     protected tick(time: number, delta: number) {
         const dt = delta / 1000;
         const cam = this.cameras.main;
-        const maxScroll = this.world.widthPx - GAME_W;
+        const maxScroll = this.world.widthPx - this.viewW;
         if (this.scrolling) {
             // creep forward, and let a speedy mouse push the screen along so
             // it is never pinned against the right edge
-            const push = this.player.x - GAME_W * 0.6;
+            const push = this.player.x - this.viewW * 0.6;
             this.scrollPos = Math.min(maxScroll, Math.max(this.scrollPos + SCROLL_SPEED * dt, push));
         }
-        cam.scrollX = this.scrollPos;
+        this.setViewLeft(this.scrollPos);
+        cam.scrollY = 100000;
 
         // cat: slides in from the left, then keeps pace with the screen.
         // When the screen stops at the end, it keeps creeping forward.
@@ -157,7 +159,7 @@ export default class Level2Scene extends BaseLevelScene {
             fan.on = true;
             blades.play('fan_spin');
             const cam = this.cameras.main;
-            if (x > cam.scrollX && x < cam.scrollX + GAME_W + 40) Sound.whoosh();
+            if (x > cam.worldView.x && x < cam.worldView.right + 40) Sound.whoosh();
             this.time.delayedCall(FAN.on, () => {
                 fan.on = false;
                 blades.play('fan_slow');
@@ -231,7 +233,7 @@ export default class Level2Scene extends BaseLevelScene {
 
     private splat(x: number, y: number) {
         const cam = this.cameras.main;
-        if (x > cam.scrollX && x < cam.scrollX + GAME_W) Sound.bloop();
+        if (x > cam.worldView.x && x < cam.worldView.right) Sound.bloop();
         for (const dir of [-1, 1]) {
             const b = this.add.circle(x, y - 2, 2, 0x120f1c).setDepth(26);
             this.tweens.add({ targets: b, x: x + dir * 8, y: y - 6, alpha: 0, duration: 300, onComplete: () => b.destroy() });

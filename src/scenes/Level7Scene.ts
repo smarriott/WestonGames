@@ -8,6 +8,7 @@ import { Sound } from '../audio/Sound';
 import { popWord } from '../ui/ui';
 
 const LIGHT = { base: 44, perFirefly: 14, mushroom: 36 };
+const DARK_PAD = 48;
 const PAW = { idle: 1700, warn: 750, swipe: 500, reach: 40 };
 
 interface Paw {
@@ -51,7 +52,9 @@ export default class Level7Scene extends BaseLevelScene {
         this.cameras.main.startFollow(this.player, true, 0.12, 0.12, 0, 20);
 
         this.makeLightStamp();
-        this.dark = this.add.renderTexture(0, 0, GAME_W, GAME_H).setOrigin(0).setScrollFactor(0).setDepth(900);
+        // the darkness lives in the world (so it zooms with it) and follows the camera;
+        // it is a little bigger than the screen so edges never peek through
+        this.dark = this.add.renderTexture(0, 0, GAME_W + 2 * DARK_PAD, GAME_H + 2 * DARK_PAD).setOrigin(0).setDepth(900);
         this.stamp = this.make.image({ key: 'light', add: false });
 
         this.addPit();
@@ -124,7 +127,8 @@ export default class Level7Scene extends BaseLevelScene {
     private drawDarkness() {
         if (this.lightsOn) return;
         const cam = this.cameras.main;
-        const ox = cam.worldView.x, oy = cam.worldView.y;
+        const ox = Math.floor(cam.worldView.x) - DARK_PAD, oy = Math.floor(cam.worldView.y) - DARK_PAD;
+        this.dark.setPosition(ox, oy);
         const flicker = 1 + Math.sin(this.t / 120) * 0.03;
         const glow = (x: number, y: number, r: number) => {
             this.stamp.setPosition(x - ox, y - oy).setScale(((r * 2) / 128) * flicker);

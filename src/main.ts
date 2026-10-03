@@ -65,22 +65,35 @@ async function start() {
         window.addEventListener(ev, () => Sound.unlock(), { passive: true });
     }
 
+    // Re-fit the game to the screen. Phones report their new size a moment
+    // after rotating, so this also runs again shortly afterwards.
+    const refit = () => {
+        if (refreshLayout()) {
+            const l = getLayout();
+            game.scale.setGameSize(l.w, l.h);
+            game.events.emit('layout');
+        }
+        game.scale.refresh();
+    };
+    const refitSoon = () => {
+        refit();
+        for (const ms of [150, 500, 1000]) setTimeout(refit, ms);
+    };
+
     // On phones held upright we show a "turn sideways" message and pause
     const portrait = window.matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 600px)');
     const onOrientation = () => {
         if (portrait.matches) game.pause();
         else game.resume();
+        refitSoon();
     };
     portrait.addEventListener('change', onOrientation);
     onOrientation();
 
-    // Touch layouts depend on the screen's shape: re-fit after rotating
-    window.addEventListener('resize', () => {
-        if (!refreshLayout()) return;
-        const l = getLayout();
-        game.scale.setGameSize(l.w, l.h);
-        game.events.emit('layout');
-    });
+    window.addEventListener('resize', refitSoon);
+    window.addEventListener('orientationchange', refitSoon);
+    // a paused game doesn't run the scale manager, so re-fit when it resumes
+    game.events.on(Phaser.Core.Events.RESUME, refitSoon);
 }
 
 void start();

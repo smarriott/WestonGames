@@ -7,6 +7,7 @@ import { markerOf, markersOf, parseLevel } from '../levels/LevelMap';
 import { Sound } from '../audio/Sound';
 import { unlockLevel } from '../game/progress';
 import { button, iconButton, popWord, text, useView } from '../ui/ui';
+import { getLayout } from '../layout';
 
 export type DeathKind = 'cat' | 'caught' | 'goo' | 'blown' | 'squish' | 'fall' | 'bonk' | 'splash' | 'boo' | 'hot' | 'swipe' | 'eek' | 'shh';
 
@@ -42,6 +43,12 @@ export abstract class BaseLevelScene extends Phaser.Scene {
     protected paused = false;
     protected retry = false;
     protected hudRight = GAME_W - 14;
+    /**
+     * The main camera shows the (possibly zoomed-in) world. This second camera
+     * draws the HUD and overlays at normal size on top: anything with
+     * scrollFactor 0 is routed to it every frame.
+     */
+    protected hudCam!: Phaser.Cameras.Scene2D.Camera;
     private pauseLayer?: Phaser.GameObjects.Container;
 
     constructor(key: LevelKey) {
@@ -61,7 +68,15 @@ export abstract class BaseLevelScene extends Phaser.Scene {
     protected setupLevel(rows: string[], theme: Theme, opts: { action?: boolean } = {}) {
         const data = parseLevel(rows);
         this.world = new WorldMap(this, data, theme);
-        useView(this);
+        useView(this, () => {
+            const l = getLayout();
+            this.cameras.main.setZoom(l.zoom);
+            this.hudCam?.setViewport(l.view.x, l.view.y, l.view.w, l.view.h);
+        });
+        const v = getLayout().view;
+        this.hudCam = this.cameras.add(v.x, v.y, v.w, v.h);
+        this.events.on(Phaser.Scenes.Events.PRE_RENDER, this.routeCameras, this);
+        this.events.once('shutdown', () => this.events.off(Phaser.Scenes.Events.PRE_RENDER, this.routeCameras, this));
         this.physics.world.setBounds(0, 0, this.world.widthPx, this.world.heightPx + 64);
         this.physics.world.setBoundsCollision(true, true, true, false);
         this.cameras.main.setBounds(0, 0, this.world.widthPx, this.world.heightPx);
@@ -78,6 +93,36 @@ export abstract class BaseLevelScene extends Phaser.Scene {
         this.input.keyboard!.on('keydown-P', () => this.togglePause());
         this.events.once('shutdown', () => this.tweens.killAll());
         this.cameras.main.fadeIn(250, 0, 0, 0);
+    }
+
+    /** Send world objects to the zoomed world camera, HUD objects to the HUD camera. */
+    private routeCameras() {
+        const world = this.cameras.main, hud = this.hudCam;
+        const pad = this.controls?.pad;
+        const padId = pad?.cam?.id ?? 0;
+        for (const o of this.children.list) {
+            if (pad && o === pad.container) {
+                o.cameraFilter = world.id | hud.id;
+                continue;
+            }
+            const isHud = (o as unknown as { scrollFactorX?: number }).scrollFactorX === 0;
+            o.cameraFilter = (isHud ? world.id : hud.id) | padId;
+        }
+    }
+
+    /** Width/height of the world visible on screen (smaller when zoomed in). */
+    protected get viewW() {
+        return this.cameras.main.width / this.cameras.main.zoom;
+    }
+
+    protected get viewH() {
+        return this.cameras.main.height / this.cameras.main.zoom;
+    }
+
+    /** Scroll so the left edge of the visible world is at world x (handles zoom). */
+    protected setViewLeft(x: number) {
+        const cam = this.cameras.main;
+        cam.scrollX = x - cam.width / 2 + this.viewW / 2;
     }
 
     /** Subclasses call this at the end of create(). */
