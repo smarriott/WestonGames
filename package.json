@@ -1,0 +1,26 @@
+{
+  "name": "mouse-on-the-run",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "npm run build && node scripts/smoke-test.mjs",
+    "export-sprites": "vite-node scripts/export-sprites.ts"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "vite-node": "^3.2.4",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "phaser": "^3.80.0"
+  },
+  "description": "A spooky-but-silly pixel-art platformer for kids, built with Phaser 3."
+}
